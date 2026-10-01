@@ -1033,25 +1033,43 @@
             </section>
         </div>
 
-        <div id="inventorySection" class="hidden">
-            <h2 class="section-title">مخزون الموقع التجريبي</h2>
-            <p class="market-status">هذه عناصر اشتريتها داخل الموقع، ويمكنك تجربة عرضها هنا. لا يتم نقل سكنات Steam الحقيقية.</p>
-            <div class="market-grid" id="inventory-items"></div>
-        </div>
+      function renderSkins(skins) {
+    var grid = document.getElementById('market-items');
+    document.getElementById('marketResultCount').textContent = skins.length + " نتائج";
+    grid.innerHTML = '';
 
-        <section id="steamInventorySection" class="hidden" aria-labelledby="steamInventoryTitle">
-            <h2 class="section-title" id="steamInventoryTitle">مخزونك في Steam (CS2)</h2>
-            <p class="market-status">معاينة لمخزون Steam فقط. الإدراج والتداول الحقيقيان غير متاحين قبل ربط Steam Trade Offers.</p>
-            <button class="btn-action" type="button" onclick="fetchSteamInventory()">تحديث مخزون Steam</button>
-            <p class="market-status" id="steamInventoryStatus" aria-live="polite">جارٍ تحميل مخزون Steam...</p>
-            <div class="market-grid" id="steam-inventory-items"></div>
-        </section>
+    if (skins.length === 0) {
+        grid.innerHTML = '<p style="color: var(--text-main); grid-column: 1/-1; text-align: center;">لا توجد سكنات معروضة تطابق الفلاتر حالياً.</p>';
+        return;
+    }
 
-        <section id="steamTestListingsSection" class="hidden" aria-labelledby="steamTestListingsTitle">
-            <h2 class="section-title" id="steamTestListingsTitle">إعلانات الاختبار الخاصة بك</h2>
-            <p class="market-status">هذه القائمة محفوظة لحسابك ولا تظهر في السوق. لا تخصم رصيدًا ولا تنقل أي عنصر في Steam.</p>
-            <div class="market-grid" id="steam-test-listings"></div>
-        </section>
+    skins.forEach(function(skin) {
+        var color = skin.color || '#45f3ff';
+        var seller = skin.seller;
+        var ownListing = !!(seller && seller.steamId === viewerSteamId);
+        var unavailable = !!(seller && (seller.tradeRestricted || ownListing));
+        var purchaseLabel = ownListing ? 'إعلانك الشخصي' : 'شراء الآن';
+
+        // بناء كود الكرت مدمج ومصفى بالكامل بدون أي باكسلاش تالفة
+        var cardHtml = '<div class="skin-card" style="box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-top: 3px solid ' + color + ';">' +
+            '<div>' +
+                '<div class="rarity-bar" style="background-color: ' + color + ';"></div>' +
+                skinImageMarkup(skin) +
+                '<div class="skin-title">' + escapeHtml(skin.name) + '</div>' +
+                renderWearInfo(skin) +
+                '<div class="skin-price">$' + Number(skin.price).toFixed(2) + '</div>' +
+                renderReferencePrice(skin) +
+                renderSellerSummary(seller) +
+            '</div>' +
+            '<div>' +
+                renderPreviewButton(skin) +
+                (ownListing ? renderOwnListingControls(skin) : '<button class="btn-action" ' + (unavailable ? 'disabled' : '') + ' onclick="buySkin(\'' + skin._id + '\')   >' + purchaseLabel + '</button>') +
+            '</div>' +
+        '</div>';
+
+        grid.innerHTML += cardHtml;
+
+
 
         <section id="supportSection" class="support-section hidden" aria-labelledby="supportTitle">
             <h2 class="section-title" id="supportTitle">مركز الدعم والشكاوى</h2>
@@ -1279,19 +1297,29 @@ document.addEventListener('keydown', event => {
 
         function skinImageMarkup(skin) {
             const name = escapeHtml(skin.name || 'CS2 item');
-            const imageUrl = typeof skin.imageUrl === 'string' && skin.imageUrl.startsWith('https://community.akamai.steamstatic.com/')
-                ? escapeHtml(skin.imageUrl)
-                : '';
+            
+            // جلب الرابط الصحيح سواء من imageUrl أو image بشكل مرن
+            let rawUrl = skin.imageUrl || skin.image || '';
+            let imageUrl = '';
 
-            if (!imageUrl) return `<div class="image-fallback" role="img" aria-label="${name}">الصورة غير متوفرة</div>`;
-            return `<img class="skin-image" src="${imageUrl}" alt="${name}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><div class="image-fallback" role="img" aria-label="${name}" hidden>الصورة غير متوفرة</div>`;
-        }
+            if (typeof rawUrl === 'string' && rawUrl.trim() !== '') {
+                imageUrl = rawUrl.trim();
+                if (imageUrl.startsWith('//')) {
+                    imageUrl = 'https:' + imageUrl;
+                }
+            }
 
-        function renderReferencePrice(skin) {
-            if (!Number.isFinite(Number(skin.marketPrice)) || Number(skin.marketPrice) <= 0) return '';
-            const source = escapeHtml(skin.marketPriceSource || 'مرجع السوق');
-            return `<div class="skin-reference-price">${source}: $${Number(skin.marketPrice).toFixed(2)}</div>`;
+            // تم تصحيح القالب باستخدام المغيرات النصية السليمة لتقرأ المتصفحات الرابط الفعلي فوراً
+            return `
+                <div class="skin-image-container">
+                    ${imageUrl ? `<img class="skin-image" src="escapeHtml(imageUrl)" alt="{name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">` : ''}
+                    <div class="image-fallback" style="${imageUrl ? 'display: none;' : 'display: grid;'}">الصورة غير متوفرة</div>
+                </div>
+            `;
         }
+        
+            
+        
 
         function renderSellerSummary(seller) {
             if (!seller) return '';
@@ -1307,8 +1335,8 @@ document.addEventListener('keydown', event => {
                 : '<span class="seller-avatar-fallback" aria-hidden="true">S</span>';
             return `<a class="skin-seller" href="/profile/${encodeURIComponent(seller.steamId)}">${avatar}<span>${name}<br>${reputation} | ${sales} مبيعات | ${reports} بلاغات</span></a>`;
         }
+ownListing ? renderOwnListingControls(skin) : '<button class="btn-action" ' + (unavailable ? 'disabled' : '') + ' onclick="buySkin(\'' + skin._id + '\')">' + purchaseLabel + '</button>'
 
-        function renderOwnListingControls(skin) {
             const skinId = escapeHtml(skin._id);
             return `
                 <form class="seller-listing-controls" onsubmit="updateUserListingPrice(event, '${skinId}')">
@@ -1321,8 +1349,6 @@ document.addEventListener('keydown', event => {
                     </div>
                 </form>
             `;
-        }
-
         function renderPreviewButton(skin) {
             const encodedItem = encodeURIComponent(JSON.stringify(skin)).replace(/'/g, '%27');
             return `<button class="btn-action preview-button" type="button" onclick="openPreview('${encodedItem}')">معاينة السكن</button>`;
@@ -1439,42 +1465,43 @@ document.addEventListener('keydown', event => {
             });
             renderSkins(getVisibleSkins());
         }
-
         function renderSkins(skins) {
             const grid = document.getElementById('market-items');
-            document.getElementById('marketResultCount').textContent = `${skins.length} results`;
+            document.getElementById('marketResultCount').textContent = skins.length + " نتائج";
             grid.innerHTML = '';
 
             if (skins.length === 0) {
-                grid.innerHTML = '<p style="color: var(--text-main); grid-column: 1/-1; text-align: center;">لا توجد نتائج مطابقة للفلاتر الحالية.</p>';
+                grid.innerHTML = '<p style="color: var(--text-main); grid-column: 1/-1; text-align: center;">لا توجد سكنات معروضة تطابق الفلاتر حالياً.</p>';
                 return;
             }
 
             skins.forEach(skin => {
-                const color = /^#[\da-f]{3,8}$/i.test(skin.color || '') ? skin.color : '#45f3ff';
-                const borderStyle = `style="box-shadow: 0 0 12px ${color}; border-color: ${color};"`;
-                const barStyle = `style="background-color: ${color}; box-shadow: 0 0 8px ${color};"`;
+                const color = skin.color || '#45f3ff';
                 const seller = skin.seller;
                 const ownListing = seller?.steamId === viewerSteamId;
-                const unavailable = Boolean(seller && (seller.tradeRestricted || seller.isBlockedByMe || ownListing));
-                const purchaseLabel = seller?.tradeRestricted ? 'موقوف مؤقتًا'
-                    : seller?.isBlockedByMe ? 'محظور لديك'
-                        : ownListing ? 'إعلانك' : 'شراء الآن';
+                const unavailable = !!(seller && (seller.tradeRestricted || ownListing));
+                const purchaseLabel = ownListing ? 'إعلانك الشخصي' : 'شراء الآن';
                 
                 grid.innerHTML += `
-                    <div class="skin-card" ${borderStyle}>
-                        ${skinImageMarkup(skin)}
-                        <div class="rarity-bar" ${barStyle}></div>
-                        <div class="skin-title">${escapeHtml(skin.name)}</div>
-                        ${renderWearInfo(skin)}
-                        <div class="skin-price">$${skin.price}</div>
-                        ${renderReferencePrice(skin)}
-                        ${renderSellerSummary(seller)}
-                        ${renderPreviewButton(skin)}
-                        ${ownListing
-                            ? renderOwnListingControls(skin)
-                            : `<button class="btn-action" ${unavailable ? 'disabled' : ''} onclick="buySkin('${skin._id}')">${purchaseLabel}</button>`}
+                    <div class="skin-card" style="box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-top: 3px solid ${color};">
+                        <div>
+                            <div class="rarity-bar" style="background-color: ${color};"></div>
+                            ${skinImageMarkup(skin)}
+                            <div class="skin-title">${escapeHtml(skin.name)}</div>
+                            ${renderWearInfo(skin)}
+                            <div class="skin-price">$${Number(skin.price).toFixed(2)}</div>
+                            ${renderReferencePrice(skin)}
+                            ${renderSellerSummary(seller)}
+                        </div>
+                        <div>
+                            ${renderPreviewButton(skin)}
+                            ${ownListing ? renderOwnListingControls(skin) : `<button class="btn-action" \${unavailable ? 'disabled' : ''} onclick="buySkin('\({skin._id}')">\){purchaseLabel}</button>`}
+                        </div>
                     </div>
+                `;
+            });
+        }
+
                 `;
             });
         }
@@ -1500,8 +1527,6 @@ document.addEventListener('keydown', event => {
                 steamInventoryItems = data.items || [];
                 renderSteamInventory(steamInventoryItems);
                 status.textContent = data.hasMore
-                    ? `تم تحميل ${data.totalCount} عنصرًا على الأقل. قد يكون هناك المزيد في مخزون Steam.`
-                    : `عدد العناصر: ${data.totalCount || 0}`;
             } catch (error) {
                 grid.innerHTML = '';
                 status.textContent = error.message || 'تعذر تحميل مخزون Steam الآن.';
@@ -1520,25 +1545,7 @@ document.addEventListener('keydown', event => {
                 const assetId = /^\d{1,32}$/.test(String(item.assetid || '')) ? String(item.assetid) : '';
                 const marketStatus = item.marketable ? 'قابل للبيع على Steam' : 'غير قابل للبيع على Steam';
                 const tradeStatus = item.tradable ? 'قابل للتبادل' : 'غير قابل للتبادل';
-                grid.innerHTML += `
-                    <article class="skin-card">
-                        ${skinImageMarkup(item)}
-                        <div class="skin-title">${escapeHtml(item.name || 'سكن CS2')}</div>
-                        <div class="skin-wear">${escapeHtml(item.type || 'عنصر CS2')} | درجة الاهتراء غير متاحة من بيانات Steam</div>
-                        <div class="skin-wear">${tradeStatus} | ${marketStatus}</div>
-                        ${renderPreviewButton(item)}
-                        ${assetId && item.tradable && item.marketable && steamTestFeatureAvailable && steamTestListingIds.has(assetId) ? `
-                            <button class="btn-action btn-sell" type="button" disabled>مضاف لقائمة اختبارك</button>
-                        ` : assetId && item.tradable && item.marketable && steamTestFeatureAvailable ? `
-                            <label class="price-editor" for="steam-test-price-${assetId}">سعر اختبار بالدولار
-                                <input id="steam-test-price-${assetId}" type="number" min="0.01" max="10000000" step="0.01" value="1.00" inputmode="decimal">
-                            </label>
-                            <button class="btn-action btn-sell" type="button" onclick="createSteamTestListing('${assetId}')">إدراج اختبار خاص</button>
-                        ` : assetId && item.tradable && item.marketable ? '' : '<button class="btn-action btn-sell" type="button" disabled>غير متاح للاختبار: غير قابل للتداول</button>'}
-                    </article>
-                `;
-            });
-        }
+                grid.innerHTML += `                        
 
         async function fetchSteamTestListings() {
             const grid = document.getElementById('steam-test-listings');
@@ -1860,4 +1867,289 @@ document.addEventListener('keydown', event => {
     </script>
 </body>
 </html>
- 
+ <html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Market</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="theme-color" content="#101216">
+    <style>
+        :root {
+            --bg-main: #0b0c10;
+            --bg-card: #141922;
+            --bg-header: #11161d;
+            --text-main: #c5c6c7;
+            --text-bright: #ffffff;
+            --accent-cyan: #45f3ff;
+            --accent-gold: #ffca28;
+            --border-glow: rgba(69, 243, 255, 0.15);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(145deg, var(--bg-header), #1a222d);
+            padding: 20px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+            grid-template-areas: "wallet logo controls";
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 40px;
+            border-radius: 12px;
+        }   
+
+        .header-start { grid-area: wallet; justify-self: start; min-width: 0; }
+
+        .logo {
+            grid-area: logo;
+            justify-self: center;
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-bright);
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(69, 243, 255, 0.4);
+            transform-origin: center;
+            animation: logo-arrive 700ms ease-out both, logo-glow 4s ease-in-out 700ms infinite;
+        }
+
+        @keyframes logo-arrive {
+            from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes logo-glow {
+            50% { text-shadow: 0 0 18px rgba(69, 243, 255, 0.72); }
+        }
+
+        .logo span { color: var(--accent-cyan); }
+
+        .header-controls {
+            grid-area: controls;
+            justify-self: end;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 15px;
+            align-items: center;
+            position: relative;
+        }
+
+        [dir="rtl"] .header-start, [dir="rtl"] .header-controls { direction: rtl; }
+
+        .account-dropdown { position: relative; }
+
+        .account-menu-trigger {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            list-style: none;
+            padding: 11px 18px;
+            color: #ffffff;
+            background: #171a21;
+            border: 1px solid #303846;
+            border-radius: 8px;
+            cursor: pointer;
+            font: inherit;
+            font-weight: 600;
+        }
+
+        .account-menu-trigger::-webkit-details-marker { display: none; }
+
+        .account-avatar, .account-avatar-fallback {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            object-fit: cover;
+            color: #0b0c10;
+            background: var(--accent-cyan);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .account-menu-trigger::after { content: ' ▾'; color: var(--accent-cyan); }
+
+        .account-menu-panel {
+            position: absolute;
+            inset-inline-end: 0;
+            top: calc(100% + 8px);
+            z-index: 20;
+            display: grid;
+            gap: 12px;
+            width: min(340px, calc(100vw - 40px));
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            padding: 16px;
+            color: var(--text-main);
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+        }
+
+        .account-connection { display: flex; justify-content: space-between; gap: 12px; }
+        .account-connection strong { color: var(--accent-cyan); font-weight: 600; }
+
+        .account-menu-action {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            color: var(--text-bright);
+            text-align: right;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+        }
+
+        .account-menu-action:hover { border-color: var(--accent-cyan); }
+        .account-privacy-toggle { display: flex; align-items: center; gap: 10px; color: var(--text-bright); cursor: pointer; }
+        .account-privacy-toggle input { width: 18px; height: 18px; accent-color: var(--accent-cyan); }
+        .privacy-note { margin: 8px 0 0; color: var(--text-main); font-size: 13px; }
+        .security-details { border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 12px; }
+        .security-details summary { color: var(--text-bright); cursor: pointer; }
+        .security-details ul { margin: 10px 0 0; padding-inline-start: 20px; font-size: 13px; line-height: 1.8; }
+        .logout-action { color: #ff8a80; }
+
+        .wallet-section { display: grid; gap: 10px; min-width: 220px; justify-items: stretch; }
+        .wallet-badge {
+            background: rgba(69, 243, 255, 0.07);
+            border: 1px solid rgba(69, 243, 255, 0.3);
+            color: var(--accent-cyan);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 15px;
+            text-shadow: 0 0 8px rgba(69, 243, 255, 0.3);
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .deposit-amount { display: grid; gap: 6px; color: var(--text-bright); font-size: 13px; }
+        .deposit-amount input {
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 40px;
+            padding: 8px 10px;
+            color: var(--text-bright);
+            background: #10151c;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 8px;
+            font: inherit;
+        }
+
+        #paypal-button-container { min-width: 200px; }
+
+        .steam-btn {
+            background: #171a21;
+            color: #ffffff;
+            border: 1px solid #303846;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .steam-btn:hover { background: #242933; border-color: #434e61; }
+
+        .section-title {
+            color: var(--text-bright);
+            margin: 40px 0 20px 0;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
+        }
+
+        .filter-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            padding: 10px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-height: 42px;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(69, 243, 255, 0.05);
+            box-shadow: 0 0 15px rgba(69, 243, 255, 0.2);
+        }
+
+        .market-layout {
+            display: grid;
+            grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+            gap: 24px;
+            align-items: start;
+            direction: ltr;
+        }
+
+        .market-sidebar {
+            position: sticky;
+            top: 16px;
+            display: grid;
+            gap: 18px;
+            align-content: start;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        .market-sidebar h3, .market-sidebar label, .market-sidebar summary {
+            color: var(--text-bright);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .market-sidebar h3 { margin: 0 0 10px; }
+        .market-sidebar label { display: grid; gap: 7px; }
+
+        [dir="rtl"] .market-sidebar, [dir="rtl"] .market-content { direction: rtl; }
+
+        .search-input-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 6px; }
+        .market-search, .market-sort, .advanced-filter-input {
+            width: 100%;
+            min-height: 44px;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            color: var(--text-bright);
+            background: #10151c;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 8px;
+            font: inherit;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .market-search:focus, .market-sort:focus, .advanced-filter-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(69, 243, 255, 0.14), 0 0 18px rgba(69, 243, 255, 0.22);
+        }
+
+        .search-submit {
+            display: grid;
+            place-items: center;
+            color: #0b0c10;
+            background: var(--accent-cyan);
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .search-submit:hover { background: #2de4ff; }
