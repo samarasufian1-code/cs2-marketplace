@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الملف الشخصي | Dynamic Market</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="theme-color" content="#101216">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#101216; --surface:#181b22; --raised:#20252e; --border:#303744; --text:#f5f6f7; --muted:#98a2b3; --cyan:#45f3ff; --green:#58d68d; --red:#ff6874; }
+        * { box-sizing:border-box; }
+        body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:Cairo,sans-serif; }
+        button,input,select { font:inherit; }
+        .hidden { display:none!important; }
+        header { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px max(20px,calc((100vw - 1240px)/2)); background:#161920; border-bottom:1px solid var(--border); }
+        .brand { color:var(--text); text-decoration:none; font-weight:800; font-size:19px; }
+        .brand span { color:var(--cyan); }
+        .header-actions { display:flex; align-items:center; gap:10px; }
+        .back-link,.menu-trigger { min-height:40px; display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border:1px solid var(--border); border-radius:6px; background:transparent; color:var(--text); text-decoration:none; cursor:pointer; }
+        .language-toggle { min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:6px; background:transparent; color:var(--text); cursor:pointer; font-weight:700; }
+        .menu { position:relative; }
+        .menu-trigger { width:42px; font-size:20px; }
+        .menu-panel { position:absolute; z-index:5; top:calc(100% + 8px); inset-inline-end:0; min-width:180px; padding:6px; background:var(--raised); border:1px solid var(--border); border-radius:7px; box-shadow:0 12px 30px #0008; }
+        .menu-panel a { display:block; padding:9px 10px; color:var(--text); text-decoration:none; border-radius:4px; }
+        .menu-panel a:hover { background:#ffffff0c; }
+        main { width:min(1240px,100%); margin:26px auto 60px; padding:0 20px; }
+        .profile-hero { display:flex; align-items:center; gap:18px; padding:20px; background:var(--surface); border:1px solid var(--border); border-radius:8px; }
+        .avatar { width:72px; height:72px; flex:0 0 auto; border-radius:50%; object-fit:cover; background:var(--raised); }
+        .profile-meta { min-width:0; flex:1; }
+        .profile-meta h1 { margin:0; font-size:22px; overflow-wrap:anywhere; }
+        .badges { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+        .badge { padding:3px 9px; border:1px solid var(--border); border-radius:4px; color:var(--muted); font-size:12px; }
+        .badge.rep { color:var(--cyan); border-color:#45f3ff44; }
+        .badge.sales { color:var(--green); border-color:#58d68d44; }
+        .tabs { display:flex; gap:6px; overflow-x:auto; margin:22px 0 18px; border-bottom:1px solid var(--border); }
+        .tab { flex:0 0 auto; padding:10px 14px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); cursor:pointer; }
+        .tab[aria-selected="true"] { color:var(--cyan); border-bottom-color:var(--cyan); }
+        .section-heading { margin:0 0 8px; font-size:18px; }
+        .section-note { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.7; }
+        .inventory-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr)); gap:14px; }
+        .item-card { min-width:0; display:flex; flex-direction:column; gap:8px; padding:14px; background:var(--surface); border:1px solid var(--border); border-radius:7px; }
+        .item-image,.image-fallback { width:100%; height:142px; object-fit:contain; background:#11141a; border-radius:4px; }
+        .image-fallback { display:grid; place-items:center; color:var(--muted); font-size:13px; }
+        .item-name { min-height:40px; font-weight:700; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+        .item-detail,.reference,.subtle { color:var(--muted); font-size:12px; }
+        .reference { color:var(--cyan); }
+        .offer-tag { color:var(--green); font-size:12px; font-weight:700; }
+        .price-input { width:100%; min-height:40px; padding:8px 10px; direction:ltr; text-align:left; color:var(--text); background:#11141a; border:1px solid var(--border); border-radius:5px; }
+        .button-row { display:flex; flex-wrap:wrap; gap:7px; }
+        .button { min-height:38px; padding:7px 10px; border:1px solid var(--cyan); border-radius:5px; background:var(--cyan); color:#101216; font-weight:700; cursor:pointer; }
+        .button.secondary { border-color:var(--border); background:transparent; color:var(--text); }
+        .button.danger { border-color:#ff687455; background:transparent; color:var(--red); }
+        .button:disabled { opacity:.55; cursor:not-allowed; }
+        .notice { margin:18px 0 0; padding:12px 14px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:13px; line-height:1.7; }
+        .report-panel { margin-top:28px; padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:7px; }
+        .report-form { display:flex; flex-wrap:wrap; gap:8px; }
+        .report-form select { flex:1; min-width:210px; padding:9px; background:#11141a; color:var(--text); border:1px solid var(--border); border-radius:5px; }
+        .toast-container { position:fixed; inset-inline-start:16px; bottom:16px; z-index:10; display:grid; gap:8px; }
+        .toast { max-width:min(420px,calc(100vw - 32px)); padding:12px 15px; background:var(--raised); border:1px solid var(--border); border-inline-start:4px solid var(--cyan); border-radius:5px; box-shadow:0 8px 24px #0008; font-size:13px; }
+        .toast.error { border-inline-start-color:var(--red); }
+        .toast.success { border-inline-start-color:var(--green); }
+        @media (max-width:600px) {
+            header { padding-inline:14px; }
+            main { margin-top:16px; padding-inline:14px; }
+            .profile-hero { align-items:flex-start; padding:15px; }
+            .avatar { width:58px; height:58px; }
+            .profile-meta h1 { font-size:18px; }
+            .inventory-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+            .item-card { padding:10px; }
+            .item-image,.image-fallback { height:112px; }
+        }
+        @media (max-width:360px) { .inventory-grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <a class="brand" href="/">DYNAMIC <span>MARKET</span></a>
+        <div class="header-actions">
+            <a class="back-link" href="/">العودة للسوق</a>
+            <select class="language-toggle" id="languageSelect" aria-label="لغة الموقع" onchange="setSiteLanguage(this.value)">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+                <option value="ja">日本語</option>
+                <option value="zh">简体中文</option>
+            </select>
+            <details class="menu">
+                <summary class="menu-trigger" aria-label="القائمة">⋯</summary>
+                <nav class="menu-panel" aria-label="روابط الحساب">
+                    <a href="/">السوق</a>
+                    <a href="/#inventorySection">مخزوني</a>
+                </nav>
+            </details>
+        </div>
+    </header>
+
+    <main>
+        <section class="profile-hero" aria-labelledby="profileName">
+            <img class="avatar" id="profileAvatar" alt="صورة حساب Steam" hidden>
+            <div class="profile-meta">
+                <h1 id="profileName">جاري تحميل الملف الشخصي...</h1>
+                <div class="badges">
+                    <span class="badge rep" id="reputationScore">--</span>
+                    <span class="badge rep" id="reputationLabel">جاري التحميل</span>
+                    <span class="badge sales" id="salesBadge">0 مبيعات</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="tabs" role="tablist" aria-label="أقسام الملف الشخصي">
+            <button class="tab" id="inventoryTab" role="tab" aria-selected="true" aria-controls="inventoryPanel" onclick="selectTab('inventory')">مخزون Steam</button>
+            <button class="tab" id="salesTab" role="tab" aria-selected="false" aria-controls="salesPanel" onclick="selectTab('sales')">Sales</button>
+            <button class="tab" id="offersTab" role="tab" aria-selected="false" aria-controls="offersPanel" onclick="selectTab('offers')">Special Offers</button>
+            <button class="tab hidden" id="testTab" role="tab" aria-selected="false" aria-controls="testPanel" onclick="selectTab('test')">إعلانات الاختبار</button>
+        </div>
+
+        <section id="inventoryPanel" role="tabpanel" aria-labelledby="inventoryTab">
+            <h2 class="section-heading">مخزون CS2 في Steam</h2>
+            <p class="section-note" id="inventoryMessage">جاري تحميل المخزون...</p>
+            <div class="inventory-grid" id="inventoryGrid"></div>
+        </section>
+        <section id="salesPanel" class="hidden" role="tabpanel" aria-labelledby="salesTab">
+            <h2 class="section-heading">مبيعات البائع</h2>
+            <p class="section-note">إعلانات الموقع الحالية. تعديل السعر هنا يغيّر سعر الإعلان فقط، ولا ينقل عنصر Steam.</p>
+            <div class="inventory-grid" id="salesGrid"></div>
+        </section>
+        <section id="offersPanel" class="hidden" role="tabpanel" aria-labelledby="offersTab">
+            <h2 class="section-heading">العروض الخاصة</h2>
+            <p class="section-note">إعلانات هذا البائع المسعّرة بأقل من مرجع السوق المتاح.</p>
+            <div class="inventory-grid" id="offersGrid"></div>
+        </section>
+        <section id="testPanel" class="hidden" role="tabpanel" aria-labelledby="testTab">
+            <h2 class="section-heading">إعلانات الاختبار الخاصة بك</h2>
+            <p class="section-note">محفوظة لحسابك فقط في وضع التطوير. لا تظهر في السوق ولا تنفذ تداولًا أو نقلًا في Steam.</p>
+            <div class="inventory-grid" id="testListingsGrid"></div>
+        </section>
+
+        <section class="report-panel hidden" id="reportSection">
+            <h2 class="section-heading">الإبلاغ عن البائع</h2>
+            <p class="section-note" id="reportHint"></p>
+            <form class="report-form hidden" id="reportForm" onsubmit="submitReport(event)">
+                <select id="reportReason" aria-label="سبب البلاغ" required>
+                    <option value="">اختر سبب البلاغ</option>
+                    <option value="item_mismatch">العنصر لا يطابق الإعلان</option>
+                    <option value="listing_misleading">الإعلان مضلل</option>
+                    <option value="suspected_fraud">اشتباه احتيال</option>
+                    <option value="conduct">سلوك غير مناسب</option>
+                </select>
+                <button class="button" type="submit">إرسال البلاغ</button>
+            </form>
+        </section>
+        <p class="notice">الشراء والبيع هنا لا ينفذان Steam Trade Offer تلقائيًا. بوتات الشراء والتحويل الفوري تحتاج تكامل تداول وخدمة خلفية آمنة قبل إطلاقها.</p>
+    </main>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+    <script src="/i18n.js"></script>
+    <script>
+        const profileIdFromPath = window.location.pathname.split('/').pop();
+        let profileData = null;
+        let testListingsEnabled = false;
+        let testListingIds = new Set();
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[character]);
+        }
+
+        function safeSteamImageUrl(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' && url.hostname.endsWith('.steamstatic.com') ? url.href : '';
+            } catch {
+                return '';
+            }
+        }
+
+        function formatUsd(value) {
+            const price = Number(value);
+            return Number.isFinite(price) && price > 0
+                ? '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : 'غير متوفر';
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            window.setTimeout(() => toast.remove(), 4500);
+        }
+
+        function selectTab(name) {
+            ['inventory', 'sales', 'offers', 'test'].forEach(tab => {
+                document.getElementById(tab + 'Tab').setAttribute('aria-selected', String(tab === name));
+                document.getElementById(tab + 'Panel').classList.toggle('hidden', tab !== name);
+            });
+        }
+
+        function renderInventory(items, message) {
+            const grid = document.getElementById('inventoryGrid');
+            document.getElementById('inventoryMessage').textContent = message || 'مخزون Steam العام للمعاينة.';
+            grid.innerHTML = '';
+            if (!Array.isArray(items) || items.length === 0) {
+                grid.innerHTML = '<p class="subtle">' + escapeHtml(message || 'لا توجد عناصر عامة لعرضها.') + '</p>';
+                return;
+            }
+
+            items.forEach(item => {
+                const assetId = /^\d{1,32}$/.test(String(item.assetid || '')) ? String(item.assetid) : '';
+                const imageUrl = safeSteamImageUrl(item.imageUrl);
+                const marketPrice = Number(item.marketPrice);
+                const hasReference = Number.isFinite(marketPrice) && marketPrice > 0;
+                const priceSource = escapeHtml(item.marketPriceSource || 'مرجع السوق');
+                const suggestedPrice = hasReference ? Math.round(marketPrice * 95) / 100 : '';
+                const image = imageUrl
+                    ? '<img class="item-image" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(item.name) + '" loading="lazy">'
+                    : '<div class="image-fallback">الصورة غير متوفرة</div>';
+                let controls = '<p class="subtle">المخزون للمعاينة. Steam لا يوفر درجة الاهتراء في هذا الرد.</p>';
+
+                if (profileData.isOwner && assetId && item.tradable && item.marketable && testListingsEnabled) {
+                    controls = testListingIds.has(assetId)
+                        ? '<p class="reference">مضاف لإعلانات الاختبار الخاصة</p>'
+                        : '<label class="subtle" for="steam-price-' + assetId + '">سعر اختبار مقترح (5% أقل من المرجع)</label>' +
+                          '<input class="price-input" id="steam-price-' + assetId + '" type="number" min="0.01" max="10000000" step="0.01" value="' + suggestedPrice + '">' +
+                          (hasReference ? '<button class="button secondary" type="button" onclick="resetSteamPrice(\'' + assetId + '\', ' + suggestedPrice + ')">إرجاع للسعر المقترح</button>' : '') +
+                          '<button class="button" type="button" onclick="createTestListing(\'' + assetId + '\')">إدراج اختبار خاص</button>';
+                } else if (!item.tradable || !item.marketable) {
+                    controls = '<p class="subtle">العنصر غير قابل للتبادل أو البيع على Steam.</p>';
+                }
+
+                grid.insertAdjacentHTML('beforeend', '<article class="item-card">' + image +
+                    '<div class="item-name">' + escapeHtml(item.name || 'سكن CS2') + '</div>' +
+                    '<div class="item-detail">' + escapeHtml(item.type || 'عنصر CS2') + ' · درجة الاهتراء غير متاحة</div>' +
+                    (hasReference ? '<div class="reference">' + priceSource + ': ' + formatUsd(marketPrice) + '</div>' : '<div class="subtle">لا يوجد مرجع سعري معروف</div>') +
+                    controls + '</article>');
+            });
+        }
+
+        function renderSales(listings, gridId, editable) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = '';
+            if (!Array.isArray(listings) || listings.length === 0) {
+                grid.innerHTML = '<p class="subtle">لا توجد إعلانات في هذا القسم.</p>';
+                return;
+            }
+
+            listings.forEach(listing => {
+                const listingId = String(listing._id || '');
+                const safeId = /^[a-f\d]{24}$/i.test(listingId) ? listingId : '';
+                const price = Number(listing.price) || 0;
+                const marketPrice = Number(listing.marketPrice);
+                const hasReference = Number.isFinite(marketPrice) && marketPrice > 0;
+                const priceSource = escapeHtml(listing.marketPriceSource || 'مرجع السوق');
+                const isSpecial = hasReference && price < marketPrice;
+                const imageUrl = safeSteamImageUrl(listing.imageUrl);
+                const image = imageUrl
+                    ? '<img class="item-image" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(listing.name) + '" loading="lazy">'
+                    : '<div class="image-fallback">الصورة غير متوفرة</div>';
+                const controls = editable && safeId
+                    ? '<label class="subtle" for="sale-price-' + safeId + '">سعر العرض</label>' +
+                      '<input class="price-input" id="sale-price-' + safeId + '" type="number" min="0.01" max="10000000" step="0.01" value="' + price.toFixed(2) + '">' +
+                      '<button class="button" type="button" onclick="updateSalePrice(\'' + safeId + '\')">حفظ السعر</button>' +
+                      (hasReference ? '<button class="button secondary" type="button" onclick="resetSalePrice(\'' + safeId + '\', ' + marketPrice + ')">إرجاع للسعر المرجعي</button>' : '')
+                    : '';
+                grid.insertAdjacentHTML('beforeend', '<article class="item-card">' + image +
+                    '<div class="item-name">' + escapeHtml(listing.name || 'سكن CS2') + '</div>' +
+                    '<div class="item-detail">' + escapeHtml(listing.category || 'سكن CS2') + '</div>' +
+                    '<div class="skin-price">' + formatUsd(price) + '</div>' +
+                    (hasReference ? '<div class="reference">' + priceSource + ': ' + formatUsd(marketPrice) + '</div>' : '<div class="subtle">مرجع السوق غير متوفر</div>') +
+                    (isSpecial ? '<div class="offer-tag">Special Offer · أقل من السوق</div>' : '<div class="subtle">Sales</div>') + controls + '</article>');
+            });
+        }
+
+        function renderTestListings(listings) {
+            const grid = document.getElementById('testListingsGrid');
+            grid.innerHTML = '';
+            if (!Array.isArray(listings) || listings.length === 0) {
+                grid.innerHTML = '<p class="subtle">لا توجد إعلانات اختبار محفوظة.</p>';
+                return;
+            }
+            listings.forEach(listing => {
+                const assetId = /^\d{1,32}$/.test(String(listing.assetId || '')) ? String(listing.assetId) : '';
+                if (!assetId) return;
+                const imageUrl = safeSteamImageUrl(listing.imageUrl);
+                const image = imageUrl ? '<img class="item-image" src="' + escapeHtml(imageUrl) + '" alt="' + escapeHtml(listing.name) + '">' : '<div class="image-fallback">الصورة غير متوفرة</div>';
+                grid.insertAdjacentHTML('beforeend', '<article class="item-card">' + image +
+                    '<div class="item-name">' + escapeHtml(listing.name) + '</div>' +
+                    '<label class="subtle" for="test-price-' + assetId + '">سعر الاختبار</label>' +
+                    '<input class="price-input" id="test-price-' + assetId + '" type="number" min="0.01" max="10000000" step="0.01" value="' + Number(listing.price).toFixed(2) + '">' +
+                    '<div class="button-row"><button class="button" type="button" onclick="updateTestListing(\'' + assetId + '\')">حفظ السعر</button>' +
+                    '<button class="button danger" type="button" onclick="deleteTestListing(\'' + assetId + '\')">إلغاء الاختبار</button></div></article>');
+            });
+        }
+
+        async function loadTestListings() {
+            try {
+                const response = await fetch('/api/steam/test-listings', { cache: 'no-store' });
+                if (response.status === 404) return;
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر تحميل إعلانات الاختبار.');
+                testListingsEnabled = true;
+                testListingIds = new Set(data.map(listing => String(listing.assetId)));
+                document.getElementById('testTab').classList.remove('hidden');
+                renderTestListings(data);
+                renderInventory(profileData.inventory, profileData.inventoryMessage);
+            } catch (error) { showToast(error.message || 'تعذر تحميل إعلانات الاختبار.', 'error'); }
+        }
+
+        async function createTestListing(assetId) {
+            const price = Number(document.getElementById('steam-price-' + assetId)?.value);
+            if (!Number.isFinite(price) || price < 0.01 || price > 10000000) return showToast('أدخل سعرًا صالحًا.', 'error');
+            try {
+                const response = await fetch('/api/steam/test-listings', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ assetId, price })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر إنشاء إدراج الاختبار.');
+                showToast(data.message);
+                await loadTestListings();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+
+        async function updateTestListing(assetId) {
+            const price = Number(document.getElementById('test-price-' + assetId)?.value);
+            if (!Number.isFinite(price) || price < 0.01 || price > 10000000) return showToast('أدخل سعرًا صالحًا.', 'error');
+            try {
+                const response = await fetch('/api/steam/test-listings/' + encodeURIComponent(assetId), {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر تحديث السعر.');
+                showToast(data.message);
+                await loadTestListings();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+
+        async function deleteTestListing(assetId) {
+            try {
+                const response = await fetch('/api/steam/test-listings/' + encodeURIComponent(assetId), { method: 'DELETE' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر إلغاء الاختبار.');
+                showToast(data.message);
+                await loadTestListings();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+
+        async function updateSalePrice(listingId) {
+            const price = Number(document.getElementById('sale-price-' + listingId)?.value);
+            if (!Number.isFinite(price) || price < 0.01 || price > 10000000) return showToast('أدخل سعرًا صالحًا.', 'error');
+            try {
+                const response = await fetch('/api/market/listings/' + encodeURIComponent(listingId), {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر تعديل السعر.');
+                showToast(data.message);
+                await loadProfile();
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+
+        function resetSalePrice(listingId, marketPrice) {
+            const input = document.getElementById('sale-price-' + listingId);
+            if (input) input.value = Number(marketPrice).toFixed(2);
+        }
+
+        function resetSteamPrice(assetId, suggestedPrice) {
+            const input = document.getElementById('steam-price-' + assetId);
+            if (input) input.value = Number(suggestedPrice).toFixed(2);
+        }
+
+        async function submitReport(event) {
+            event.preventDefault();
+            if (!profileData?.canReport) return;
+            try {
+                const response = await fetch('/api/profiles/' + encodeURIComponent(profileData.steamId) + '/report', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: document.getElementById('reportReason').value })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر إرسال البلاغ.');
+                document.getElementById('reportForm').classList.add('hidden');
+                document.getElementById('reportHint').textContent = 'تم تسجيل البلاغ. عدد البلاغات: ' + data.reportCount;
+                showToast('تم إرسال البلاغ.');
+            } catch (error) { showToast(error.message, 'error'); }
+        }
+
+        async function loadProfile() {
+            try {
+                const viewerResponse = await fetch('/auth/user', { cache: 'no-store' });
+                const viewer = await viewerResponse.json();
+                const targetSteamId = profileIdFromPath === 'me' ? viewer.profileId : profileIdFromPath;
+                if (!/^\d{17}$/.test(String(targetSteamId || ''))) throw new Error('سجّل الدخول عبر Steam لفتح ملفك الشخصي.');
+
+                const response = await fetch('/api/profiles/' + encodeURIComponent(targetSteamId), { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'تعذر تحميل الملف الشخصي.');
+                profileData = data;
+
+                document.getElementById('profileName').textContent = data.displayName || 'ملف Steam';
+                const avatarUrl = safeSteamImageUrl(data.avatarUrl);
+                if (avatarUrl) {
+                    const avatar = document.getElementById('profileAvatar');
+                    avatar.src = avatarUrl;
+                    avatar.hidden = false;
+                }
+                document.getElementById('reputationScore').textContent = data.reputationScore === null ? '--' : data.reputationScore + '/5';
+                document.getElementById('reputationLabel').textContent = data.reputationLabel || 'بائع';
+                document.getElementById('salesBadge').textContent = (data.salesCount || 0) + ' مبيعات ناجحة';
+                renderInventory(data.inventory || [], data.inventoryMessage);
+                renderSales(data.salesListings || [], 'salesGrid', Boolean(data.isOwner));
+                renderSales((data.salesListings || []).filter(listing => Number(listing.marketPrice) > 0 && Number(listing.price) < Number(listing.marketPrice)), 'offersGrid', Boolean(data.isOwner));
+
+                const reportSection = document.getElementById('reportSection');
+                if (viewer.loggedIn && !data.isOwner) {
+                    reportSection.classList.remove('hidden');
+                    document.getElementById('reportHint').textContent = data.canReport
+                        ? 'يمكنك الإبلاغ بعد عملية شراء ناجحة من هذا البائع.'
+                        : data.hasReported ? 'سبق أن أرسلت بلاغًا عن هذا البائع.' : 'البلاغ متاح بعد شراء ناجح مسجل في الموقع.';
+                    document.getElementById('reportForm').classList.toggle('hidden', !data.canReport);
+                }
+                if (data.isOwner) await loadTestListings();
+            } catch (error) {
+                document.getElementById('profileName').textContent = 'تعذر تحميل الملف الشخصي';
+                document.getElementById('inventoryMessage').textContent = error.message || 'تعذر الاتصال بالخادم.';
+            }
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

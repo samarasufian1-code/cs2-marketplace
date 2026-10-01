@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dynamic Market">
+  <rect width="64" height="64" rx="12" fill="#101216"/>
+  <path d="M12 16h12c13 0 22 6 22 16s-9 16-22 16H12V16Zm11 9v14h2c7 0 11-2 11-7s-4-7-11-7h-2Z" fill="#45f3ff"/>
+  <path d="M47 16h7v32h-7z" fill="#58d68d"/>
+</svg>

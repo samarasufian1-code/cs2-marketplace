@@ -1,0 +1,24 @@
+{
+  "name": "cs2-marketplace",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "node --test",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "connect-mongo": "^6.0.0",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "fast-xml-parser": "^5.11.2",
+    "mongoose": "^9.10.3",
+    "passport": "^0.7.0",
+    "passport-steam": "^1.0.18"
+  }
+}
